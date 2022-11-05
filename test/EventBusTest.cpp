@@ -48,10 +48,6 @@ public:
         this->x += casted->getX();
     }
 
-    const std::type_info &getEventType() const override
-    {
-        return typeid(testEvent);
-    }
 
     int getX() const {return  this->x;}
 
@@ -69,14 +65,27 @@ public:
         this->x += casted->getX();
     }
 
-    const std::type_info &getEventType() const override
+    int getX() const {return  this->x;}
+
+protected:
+    int x;
+};
+
+class asyncHandler : public EventBus::EventHandler<testEvent>
+{
+public:
+    asyncHandler(std::condition_variable &cv) :cv(cv), x(0) {}
+    void onEvent(std::shared_ptr<testEvent> &event) override
     {
-        return typeid(testEvent2);
+        auto casted = std::static_pointer_cast<testEvent>(event);
+        this->x += casted->getX();
+        this->cv.notify_one();
     }
 
     int getX() const {return  this->x;}
 
 protected:
+    std::condition_variable &cv;
     int x;
 };
 
@@ -159,5 +168,23 @@ TEST(EventBusTest, testDifferentHandler)
     EventBus::EventBus::getInstance()->fire(baseEvent2);
     EXPECT_EQ(handler1->getX(), 5);
     EXPECT_EQ(handler2->getX(), 6);
+    EventBus::EventBus::cleanUp();
+}
+
+TEST(EventBusTest, simpleFireAndForget)
+{
+    std::mutex mtx;
+    std::condition_variable cv;
+    auto handler = std::make_shared<asyncHandler>(cv);
+    auto baseHandler = std::static_pointer_cast<EventBus::EventHandlerBase>(handler);
+    auto handle1ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler);
+    auto event = std::make_shared<testEvent>(5);
+    auto baseEvent = std::static_pointer_cast<EventBus::Event>(event);
+
+    std::unique_lock<std::mutex> lock(mtx);
+    EventBus::EventBus::getInstance()->fireAndForget(baseEvent);
+    cv.wait(lock);
+    EXPECT_EQ(handler->getX(), 5);
+    EventBus::EventBus::getInstance()->unregisterHandler(handle1ID);
     EventBus::EventBus::cleanUp();
 }

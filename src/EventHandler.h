@@ -22,10 +22,15 @@ namespace EventBus
     class EventHandler : public EventHandlerBase
     {
     public:
-        void dispatch(std::shared_ptr<Event> &event) override
+        void dispatch(std::shared_ptr<Event> &event) final
         {
             auto casted = std::static_pointer_cast<TEvent>(event);
             onEvent(casted);
+        }
+
+        const type_info &getEventType() const final
+        {
+            return typeid(TEvent);
         }
 
         virtual void onEvent(std::shared_ptr<TEvent> &event) = 0;
