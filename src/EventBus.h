@@ -8,6 +8,8 @@
 #include <memory>
 #include <unordered_map>
 #include <mutex>
+#include <thread>
+#include <condition_variable>
 #include "EventHandler.h"
 #include "Event.h"
 
