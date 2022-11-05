@@ -28,7 +28,7 @@ namespace EventBus
             onEvent(casted);
         }
 
-        const type_info &getEventType() const final
+        const std::type_info &getEventType() const final
         {
             return typeid(TEvent);
         }
