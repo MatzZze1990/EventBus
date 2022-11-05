@@ -15,6 +15,8 @@ EventBus::EventBus::EventBus()
     this->idCounter = 1;
     this->stop = false;
     this->threadPtr = std::make_unique<std::thread>(&EventBus::handlingThread, this);
+    std::unique_lock<std::mutex> lock(this->threadMtx);
+    this->threadCond.wait(lock);
 }
 
 EventBus::EventBus::~EventBus()
@@ -41,15 +43,6 @@ void EventBus::EventBus::cleanUp()
     EventBus::instance.reset();
 }
 
-template<class TEvent>
-EBHandlerID EventBus::EventBus::registerHandler(std::unique_ptr<EventHandler<TEvent>> handler)
-{
-    static_assert(std::is_base_of<Event, TEvent>::value, "EventHandler template argument is not an derived class of EventBus::Event");
-    std::lock_guard<std::mutex> lock(this->registrationLock);
-    this->registrations.insert(this->idCounter, handler);
-    return this->idCounter++;
-}
-
 void EventBus::EventBus::unregisterHandler(EBHandlerID id)
 {
     std::lock_guard<std::mutex> lock(this->registrationLock);
@@ -62,7 +55,7 @@ void EventBus::EventBus::dispatchEvent(std::shared_ptr<Event> &event)
     {
         if (event->getType() == registration.second->getEventType())
         {
-            registration.second->onEvent(event);
+            registration.second->dispatch(event);
         }
     }
 }
@@ -82,11 +75,17 @@ void EventBus::EventBus::fireAndForget(std::shared_ptr<Event> &event)
 
 void EventBus::EventBus::handlingThread()
 {
+    this->threadCond.notify_all();
     while(!this->stop)
     {
         std::unique_lock<std::mutex> lock(this->condMtx);
-        if (this->eventCond.wait_for(lock, std::chrono::seconds(5), [&] {return !eventQueue.empty();}))
+        if (this->eventCond.wait_for(lock, std::chrono::seconds(5), [&] {return !eventQueue.empty() || stop;}))
         {
+            if (this->stop)
+            {
+                break;
+            }
+
             std::lock_guard<std::mutex> queueLock(this->queueMtx);
             std::lock_guard<std::mutex> registrationsLock(this->registrationLock);
             for (auto &event: this->eventQueue)
@@ -97,4 +96,12 @@ void EventBus::EventBus::handlingThread()
             this->eventQueue.clear();
         } // else timeout
     }
+}
+
+EBHandlerID EventBus::EventBus::registerHandler(std::shared_ptr<EventHandlerBase> &handler)
+{
+    std::lock_guard<std::mutex> lock(this->registrationLock);
+    auto insertion = std::make_pair(this->idCounter, std::static_pointer_cast<EventHandlerBase>(handler));
+    this->registrations.insert(insertion);
+    return this->idCounter++;
 }

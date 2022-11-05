@@ -27,8 +27,7 @@ namespace EventBus
 
         virtual ~EventBus();
 
-        template<class TEvent>
-        EBHandlerID registerHandler(std::unique_ptr<EventHandler<TEvent>> handler);
+        EBHandlerID registerHandler(std::shared_ptr<EventHandlerBase> &handler);
         void unregisterHandler(EBHandlerID id);
 
         void fire(std::shared_ptr<Event> &event);
@@ -38,11 +37,13 @@ namespace EventBus
         void dispatchEvent(std::shared_ptr<Event> &event);
 
         EBHandlerID idCounter;
-        std::unordered_map<EBHandlerID, std::unique_ptr<EventHandler<Event>>> registrations;
+        std::unordered_map<EBHandlerID, std::shared_ptr<EventHandlerBase>> registrations;
         std::mutex registrationLock;
         std::mutex condMtx;
         std::mutex queueMtx;
+        std::mutex threadMtx;
         std::condition_variable eventCond;
+        std::condition_variable threadCond;
         std::unique_ptr<std::thread> threadPtr;
         std::vector<std::shared_ptr<Event>> eventQueue;
         bool stop;
