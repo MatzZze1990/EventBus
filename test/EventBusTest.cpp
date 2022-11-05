@@ -89,6 +89,24 @@ protected:
     int x;
 };
 
+class asyncHandler2 : public EventBus::EventHandler<testEvent>
+{
+public:
+    asyncHandler2(std::condition_variable &cv) :cv(cv), x(0) {}
+    void onEvent(std::shared_ptr<testEvent> &event) override
+    {
+        auto casted = std::static_pointer_cast<testEvent>(event);
+        this->x += casted->getX();
+        this->cv.notify_one();
+    }
+
+    int getX() const {return  this->x;}
+
+protected:
+    std::condition_variable &cv;
+    int x;
+};
+
 TEST(EventBusTest, simpleTest)
 {
     auto handler = std::make_shared<testHandler>();
@@ -186,5 +204,37 @@ TEST(EventBusTest, simpleFireAndForget)
     cv.wait(lock);
     EXPECT_EQ(handler->getX(), 5);
     EventBus::EventBus::getInstance()->unregisterHandler(handle1ID);
+    EventBus::EventBus::cleanUp();
+}
+
+TEST(EventBusTest, differentAsyncHandlerForSameEventTest)
+{
+    std::mutex mtx;
+    std::condition_variable cv;
+    std::condition_variable cvunused;
+    auto handler = std::make_shared<asyncHandler>(cvunused);
+    auto baseHandler = std::static_pointer_cast<EventBus::EventHandlerBase>(handler);
+    auto handle1ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler);
+    auto handler2 = std::make_shared<asyncHandler2>(cv);
+    auto baseHandler2 = std::static_pointer_cast<EventBus::EventHandlerBase>(handler2);
+    auto handle2ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler2);
+    auto event = std::make_shared<testEvent>(5);
+    auto baseEvent = std::static_pointer_cast<EventBus::Event>(event);
+
+    std::unique_lock<std::mutex> lock(mtx);
+    EventBus::EventBus::getInstance()->fireAndForget(baseEvent);
+    cv.wait(lock);
+    EXPECT_EQ(handler->getX(), 5);
+    EXPECT_EQ(handler2->getX(), 5);
+    EventBus::EventBus::getInstance()->unregisterHandler(handle1ID);
+    EventBus::EventBus::getInstance()->fireAndForget(baseEvent);
+    cv.wait(lock);
+    EXPECT_EQ(handler->getX(), 5);
+    EXPECT_EQ(handler2->getX(), 10);
+    EventBus::EventBus::getInstance()->unregisterHandler(handle2ID);
+    EventBus::EventBus::getInstance()->fireAndForget(baseEvent);
+    EXPECT_EQ(handler->getX(), 5);
+    EXPECT_EQ(handler2->getX(), 10);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     EventBus::EventBus::cleanUp();
 }

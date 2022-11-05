@@ -6,7 +6,7 @@ include(conandeps.cmake)
 
 find_package(GTest REQUIRED)
 include_directories(${GTest_INCLUDE_DIRS})
-include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR})
 
 add_library(EventBus SHARED src/EventBus.cpp src/EventHandler.cpp)
 add_executable(test test/EventBusTest.cpp)
