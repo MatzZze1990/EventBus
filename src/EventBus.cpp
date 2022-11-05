@@ -14,13 +14,15 @@ EventBus::EventBus::EventBus()
 {
     this->idCounter = 1;
     this->stop = false;
-    this->threadPtr = std::make_unique<std::thread>(&EventBus::handlingThread, this);
-    std::unique_lock<std::mutex> lock(this->threadMtx);
-    this->threadCond.wait(lock);
+    bool initialized = false;
+    std::unique_lock<std::mutex> lock(EventBus::threadMtx);
+    this->threadPtr = std::make_unique<std::thread>(&EventBus::handlingThread, this, std::ref(initialized));
+    EventBus::threadCond.wait(lock, [&]{return initialized;});
 }
 
 EventBus::EventBus::~EventBus()
 {
+    std::lock_guard<std::mutex> lockEvent(this->queueMtx);
     this->stop = true;
     this->eventCond.notify_one();
     this->threadPtr->join();
@@ -73,9 +75,14 @@ void EventBus::EventBus::fireAndForget(std::shared_ptr<Event> &event)
     this->eventCond.notify_one();
 }
 
-void EventBus::EventBus::handlingThread()
+void EventBus::EventBus::handlingThread(bool &initialized)
 {
-    this->threadCond.notify_all();
+    {
+        std::lock_guard<std::mutex> lock(EventBus::threadMtx);
+        initialized = true;
+        EventBus::threadCond.notify_all();
+    }
+
     while(!this->stop)
     {
         std::unique_lock<std::mutex> lock(this->condMtx);

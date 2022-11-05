@@ -33,7 +33,7 @@ namespace EventBus
         void fire(std::shared_ptr<Event> &event);
         void fireAndForget(std::shared_ptr<Event> &event);
     protected:
-        void handlingThread();
+        void handlingThread(bool &initialized);
         void dispatchEvent(std::shared_ptr<Event> &event);
 
         EBHandlerID idCounter;
