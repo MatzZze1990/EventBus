@@ -10,6 +10,7 @@
 #include <mutex>
 #include <thread>
 #include <condition_variable>
+#include <vector>
 #include "EventHandler.h"
 #include "Event.h"
 
