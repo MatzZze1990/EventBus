@@ -5,7 +5,6 @@
 #ifndef EVENTBUS_EVENTHANDLER_H
 #define EVENTBUS_EVENTHANDLER_H
 
-#include <typeinfo>
 #include <memory>
 #include "Event.h"
 

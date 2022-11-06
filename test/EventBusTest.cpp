@@ -4,7 +4,6 @@
 
 #include <gtest/gtest.h>
 #include "src/EventBus.h"
-#include <typeinfo>
 
 class testEvent : public EventBus::Event
 {

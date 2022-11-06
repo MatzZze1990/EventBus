@@ -5,6 +5,8 @@
 #ifndef EVENTBUS_EVENT_H
 #define EVENTBUS_EVENT_H
 
+#include <typeinfo>
+
 namespace EventBus
 {
     class Event
