@@ -22,6 +22,24 @@ protected:
     int x;
 };
 
+class unregisterEvent : public EventBus::Event
+{
+public:
+    unregisterEvent(int x, EventBus::EBHandlerID id) : x(x), id(id) {}
+    virtual ~unregisterEvent() = default;
+    const std::type_info &getType() override
+    {
+        return typeid(unregisterEvent);
+    }
+
+    int getX() const {return x;}
+    EventBus::EBHandlerID getID() const {return id;}
+
+protected:
+    int x;
+    EventBus::EBHandlerID id;
+};
+
 class testEvent2 : public EventBus::Event
 {
 public:
@@ -114,6 +132,46 @@ protected:
     bool &processed;
     int x;
     int y;
+};
+
+class testUnregisterHandler : public EventBus::EventHandler<unregisterEvent>
+{
+public:
+    testUnregisterHandler() : x(0) {}
+    void onEvent(std::shared_ptr<unregisterEvent> &event) override
+    {
+        auto casted = std::static_pointer_cast<unregisterEvent>(event);
+        this->x += casted->getX();
+        EventBus::EventBus::getInstance()->unregisterHandler(casted->getID());
+    }
+
+    int getX() const {return  this->x;}
+
+protected:
+    int x;
+};
+
+class asyncUnregisterHandler : public EventBus::EventHandler<unregisterEvent>
+{
+public:
+    asyncUnregisterHandler(std::condition_variable &cv, std::mutex &mtx, bool &processed) :cv(cv), mtx(mtx), processed(processed), x(0) {}
+    void onEvent(std::shared_ptr<unregisterEvent> &event) override
+    {
+        std::unique_lock<std::mutex> lock(mtx);
+        auto casted = std::static_pointer_cast<unregisterEvent>(event);
+        this->x += casted->getX();
+        EventBus::EventBus::getInstance()->unregisterHandler(casted->getID());
+        processed = true;
+        this->cv.notify_one();
+    }
+
+    int getX() const {return  this->x;}
+
+protected:
+    std::condition_variable &cv;
+    std::mutex &mtx;
+    bool &processed;
+    int x;
 };
 
 void waitThread(std::condition_variable &cv, std::mutex &mtx, bool &processed)
@@ -239,7 +297,7 @@ TEST(EventBusTest, differentAsyncHandlerForSameEventTest)
     auto handle2ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler2);
     auto event = std::make_shared<testEvent>(5);
     auto baseEvent = std::static_pointer_cast<EventBus::Event>(event);
-    
+
     EventBus::EventBus::getInstance()->fireAndForget(baseEvent);
     std::thread t1(waitThread, std::ref(cv1), std::ref(mtx1), std::ref(processed1));
     std::thread t2(waitThread, std::ref(cv2), std::ref(mtx2), std::ref(processed2));
@@ -263,3 +321,61 @@ TEST(EventBusTest, differentAsyncHandlerForSameEventTest)
     std::this_thread::sleep_for(std::chrono::seconds(1));
     EventBus::EventBus::cleanUp();
 }
+
+TEST(EventBusTest, testSelfUnregisterViaEvent)
+{
+    auto handler = std::make_shared<testUnregisterHandler>();
+    auto baseHandler = std::static_pointer_cast<EventBus::EventHandlerBase>(handler);
+    auto handle1ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler);
+    auto event = std::make_shared<unregisterEvent>(5, handle1ID);
+    auto baseEvent = std::static_pointer_cast<EventBus::Event>(event);
+    EventBus::EventBus::getInstance()->fire(baseEvent);
+
+    EXPECT_EQ(handler->getX(), 5);
+    EventBus::EventBus::getInstance()->fire(baseEvent);
+    EXPECT_EQ(handler->getX(), 5);
+    EventBus::EventBus::cleanUp();
+}
+
+TEST(EventBusTest, testAsyncSelfUnregisterEvent)
+{
+    std::mutex mtx1;
+    std::mutex mtx2;
+    std::condition_variable cv1;
+    std::condition_variable cv2;
+    bool processed1 = false;
+    bool processed2 = false;
+    auto handler = std::make_shared<asyncUnregisterHandler>(cv1, mtx1, processed1);
+    auto baseHandler = std::static_pointer_cast<EventBus::EventHandlerBase>(handler);
+    auto handle1ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler);
+    auto handler2 = std::make_shared<asyncUnregisterHandler>(cv2, mtx2, processed2);
+    auto baseHandler2 = std::static_pointer_cast<EventBus::EventHandlerBase>(handler2);
+    auto handle2ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler2);
+    auto event1 = std::make_shared<unregisterEvent>(5, handle1ID);
+    auto baseEvent1 = std::static_pointer_cast<EventBus::Event>(event1);
+    auto event2 = std::make_shared<unregisterEvent>(5, handle2ID);
+    auto baseEvent2 = std::static_pointer_cast<EventBus::Event>(event2);
+
+    EventBus::EventBus::getInstance()->fireAndForget(baseEvent1);
+    std::thread t1(waitThread, std::ref(cv1), std::ref(mtx1), std::ref(processed1));
+    std::thread t2(waitThread, std::ref(cv2), std::ref(mtx2), std::ref(processed2));
+    t1.join();
+    t2.join();
+    processed1 = false;
+    processed2 = false;
+    EXPECT_EQ(handler->getX(), 5);
+    EXPECT_EQ(handler2->getX(), 5);
+    EventBus::EventBus::getInstance()->fireAndForget(baseEvent2);
+    std::thread t3(waitThread, std::ref(cv2), std::ref(mtx2), std::ref(processed2));
+    t3.join();
+    processed2 = false;
+    EXPECT_EQ(handler->getX(), 5);
+    EXPECT_EQ(handler2->getX(), 10);
+    EventBus::EventBus::getInstance()->fireAndForget(baseEvent1);
+    EventBus::EventBus::getInstance()->fireAndForget(baseEvent2);
+    EXPECT_EQ(handler->getX(), 5);
+    EXPECT_EQ(handler2->getX(), 10);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    EventBus::EventBus::cleanUp();
+}
+

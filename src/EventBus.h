@@ -29,19 +29,24 @@ namespace EventBus
 
         EBHandlerID registerHandler(std::shared_ptr<EventHandlerBase> &handler);
         void unregisterHandler(EBHandlerID id);
-
         void fire(std::shared_ptr<Event> &event);
         void fireAndForget(std::shared_ptr<Event> &event);
+
     protected:
         void handlingThread(bool &initialized);
-        void dispatchEvent(std::shared_ptr<Event> &event);
+        inline void dispatchEvent(std::shared_ptr<Event> &event);
+        inline void handleInsertionsAndRemovals();
 
         EBHandlerID idCounter;
         std::unordered_map<EBHandlerID, std::shared_ptr<EventHandlerBase>> registrations;
+        std::vector<std::pair<EBHandlerID, std::shared_ptr<EventHandlerBase>>> temporaryRegistrations;
+        std::vector<EBHandlerID> temporaryRegistrationsRemovals;
         std::mutex registrationLock;
         std::mutex condMtx;
         std::mutex queueMtx;
         std::mutex threadMtx;
+        std::mutex tmpRegistrationsMtx;
+        std::mutex tmpRegistrationsRemovalsMtx;
         std::condition_variable eventCond;
         std::condition_variable threadCond;
         std::unique_ptr<std::thread> threadPtr;
