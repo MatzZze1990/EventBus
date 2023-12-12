@@ -13,6 +13,7 @@ namespace EventBus
     {
     public:
         virtual const std::type_info &getType() = 0;
+        virtual ~Event() = default;
     };
 }
 

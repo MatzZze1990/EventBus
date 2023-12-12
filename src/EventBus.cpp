@@ -54,13 +54,13 @@ void EventBus::EventBus::cleanUp()
     EventBus::instance.reset();
 }
 
-void EventBus::EventBus::unregisterHandler(EBHandlerID id)
+void EventBus::EventBus::unregisterHandler(const EBHandlerID id)
 {
     std::lock_guard<std::mutex> lock(this->tmpRegistrationsRemovalsMtx);
     this->temporaryRegistrationsRemovals.push_back(id);
 }
 
-void EventBus::EventBus::dispatchEvent(std::shared_ptr<Event> &event)
+void EventBus::EventBus::dispatchEvent(std::shared_ptr<Event> &event) const
 {
     for (const auto &registration : registrations)
     {
@@ -78,7 +78,7 @@ void EventBus::EventBus::fire(std::shared_ptr<Event> &event)
     dispatchEvent(event);
 }
 
-void EventBus::EventBus::fireAndForget(std::shared_ptr<Event> &event)
+void EventBus::EventBus::fireAndForget(const std::shared_ptr<Event> &event)
 {
     std::lock_guard<std::mutex> queueLock(this->queueMtx);
     std::lock_guard<std::mutex> condLock(this->condMtx);
@@ -136,7 +136,7 @@ void EventBus::EventBus::handleInsertionsAndRemovals()
 EBHandlerID EventBus::EventBus::registerHandler(std::shared_ptr<EventHandlerBase> &handler)
 {
     std::lock_guard<std::mutex> lock(this->tmpRegistrationsMtx);
-    auto insertion = std::make_pair(this->idCounter, handler);
+    const auto insertion = std::make_pair(this->idCounter, handler);
     this->temporaryRegistrations.push_back(insertion);
     return this->idCounter++;
 }

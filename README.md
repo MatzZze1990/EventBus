@@ -87,12 +87,9 @@ public:
     
     //Callback method for incoming events
     void onEvent(std::shared_ptr<exampleEvent> &event) override
-    {
-        //cast base event to real event object
-        auto casted = std::static_pointer_cast<exampleEvent>(event);
-        
+    {        
         //custom data processing
-        this->x += casted->getX();
+        this->x += event->getX();
     }
     
     //custom getter

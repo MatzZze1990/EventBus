@@ -15,6 +15,7 @@ namespace EventBus
     public:
         virtual const std::type_info &getEventType() const = 0;
         virtual void dispatch(std::shared_ptr<Event> &event) = 0;
+        virtual ~EventHandlerBase() = default;
     };
 
     template<class TEvent>

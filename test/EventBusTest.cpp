@@ -61,8 +61,7 @@ public:
     testHandler() : x(0) {}
     void onEvent(std::shared_ptr<testEvent> &event) override
     {
-        auto casted = std::static_pointer_cast<testEvent>(event);
-        this->x += casted->getX();
+        this->x += event->getX();
     }
 
 
@@ -80,8 +79,7 @@ public:
     testHandler2() : x(0) {}
     void onEvent(std::shared_ptr<testEvent2> &event) override
     {
-        auto casted = std::static_pointer_cast<testEvent2>(event);
-        this->x += casted->getX();
+        this->x += event->getX();
     }
 
     int getX() const {return  this->x;}
@@ -97,8 +95,7 @@ public:
     void onEvent(std::shared_ptr<testEvent> &event) override
     {
         std::unique_lock<std::mutex> lock(mtx);
-        auto casted = std::static_pointer_cast<testEvent>(event);
-        this->x += casted->getX();
+        this->x += event->getX();
         processed = true;
         this->cv.notify_one();
     }
@@ -119,8 +116,7 @@ public:
     void onEvent(std::shared_ptr<testEvent> &event) override
     {
         std::unique_lock<std::mutex> lock(mtx);
-        auto casted = std::static_pointer_cast<testEvent>(event);
-        this->x += casted->getX();
+        this->x += event->getX();
         processed = true;
         this->cv.notify_one();
     }
@@ -140,9 +136,8 @@ public:
     testUnregisterHandler() : x(0) {}
     void onEvent(std::shared_ptr<unregisterEvent> &event) override
     {
-        auto casted = std::static_pointer_cast<unregisterEvent>(event);
-        this->x += casted->getX();
-        EventBus::EventBus::getInstance()->unregisterHandler(casted->getID());
+        this->x += event->getX();
+        EventBus::EventBus::getInstance()->unregisterHandler(event->getID());
     }
 
     int getX() const {return  this->x;}
@@ -158,9 +153,8 @@ public:
     void onEvent(std::shared_ptr<unregisterEvent> &event) override
     {
         std::unique_lock<std::mutex> lock(mtx);
-        auto casted = std::static_pointer_cast<unregisterEvent>(event);
-        this->x += casted->getX();
-        EventBus::EventBus::getInstance()->unregisterHandler(casted->getID());
+        this->x += event->getX();
+        EventBus::EventBus::getInstance()->unregisterHandler(event->getID());
         processed = true;
         this->cv.notify_one();
     }
@@ -182,10 +176,10 @@ void waitThread(std::condition_variable &cv, std::mutex &mtx, bool &processed)
 
 TEST(EventBusTest, simpleTest)
 {
-    auto handler = std::make_shared<testHandler>();
+    const auto handler = std::make_shared<testHandler>();
     auto baseHandler = std::static_pointer_cast<EventBus::EventHandlerBase>(handler);
-    auto handle1ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler);
-    auto event = std::make_shared<testEvent>(5);
+    const auto handle1ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler);
+    const auto event = std::make_shared<testEvent>(5);
     auto baseEvent = std::static_pointer_cast<EventBus::Event>(event);
     EventBus::EventBus::getInstance()->fire(baseEvent);
 

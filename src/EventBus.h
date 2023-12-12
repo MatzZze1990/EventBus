@@ -30,11 +30,11 @@ namespace EventBus
         EBHandlerID registerHandler(std::shared_ptr<EventHandlerBase> &handler);
         void unregisterHandler(EBHandlerID id);
         void fire(std::shared_ptr<Event> &event);
-        void fireAndForget(std::shared_ptr<Event> &event);
+        void fireAndForget(const std::shared_ptr<Event> &event);
 
     protected:
         void handlingThread(bool &initialized);
-        inline void dispatchEvent(std::shared_ptr<Event> &event);
+        inline void dispatchEvent(std::shared_ptr<Event> &event) const;
         inline void handleInsertionsAndRemovals();
 
         EBHandlerID idCounter;
