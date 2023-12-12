@@ -190,10 +190,10 @@ TEST(EventBusTest, simpleTest)
 
 TEST(EventBusTest, testMultipleEventsOnSameHandler)
 {
-    auto handler = std::make_shared<testHandler>();
+    const auto handler = std::make_shared<testHandler>();
     auto baseHandler = std::static_pointer_cast<EventBus::EventHandlerBase>(handler);
-    auto handle1ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler);
-    auto event = std::make_shared<testEvent>(5);
+    const auto handle1ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler);
+    const auto event = std::make_shared<testEvent>(5);
     auto baseEvent = std::static_pointer_cast<EventBus::Event>(event);
     EventBus::EventBus::getInstance()->fire(baseEvent);
     EventBus::EventBus::getInstance()->fire(baseEvent);
@@ -206,13 +206,13 @@ TEST(EventBusTest, testMultipleEventsOnSameHandler)
 
 TEST(EventBusTest, testMultipleHandler)
 {
-    auto handler1 = std::make_shared<testHandler>();
-    auto handler2 = std::make_shared<testHandler>();
+    const auto handler1 = std::make_shared<testHandler>();
+    const auto handler2 = std::make_shared<testHandler>();
     auto baseHandler1 = std::static_pointer_cast<EventBus::EventHandlerBase>(handler1);
     auto baseHandler2 = std::static_pointer_cast<EventBus::EventHandlerBase>(handler2);
-    auto handle1ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler1);
+    const auto handle1ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler1);
     auto handle2ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler2);
-    auto event = std::make_shared<testEvent>(5);
+    const auto event = std::make_shared<testEvent>(5);
     auto baseEvent = std::static_pointer_cast<EventBus::Event>(event);
     EventBus::EventBus::getInstance()->fire(baseEvent);
     EXPECT_EQ(handler1->getX(), 5);
@@ -226,15 +226,15 @@ TEST(EventBusTest, testMultipleHandler)
 
 TEST(EventBusTest, testDifferentHandler)
 {
-    auto handler1 = std::make_shared<testHandler>();
-    auto handler2 = std::make_shared<testHandler2>();
+    const auto handler1 = std::make_shared<testHandler>();
+    const auto handler2 = std::make_shared<testHandler2>();
     auto baseHandler1 = std::static_pointer_cast<EventBus::EventHandlerBase>(handler1);
     auto baseHandler2 = std::static_pointer_cast<EventBus::EventHandlerBase>(handler2);
-    auto handle1ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler1);
-    auto handle2ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler2);
-    auto event1 = std::make_shared<testEvent>(5);
+    const auto handle1ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler1);
+    const auto handle2ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler2);
+    const auto event1 = std::make_shared<testEvent>(5);
     auto baseEvent1 = std::static_pointer_cast<EventBus::Event>(event1);
-    auto event2 = std::make_shared<testEvent2>(3);
+    const auto event2 = std::make_shared<testEvent2>(3);
     auto baseEvent2 = std::static_pointer_cast<EventBus::Event>(event2);
     EventBus::EventBus::getInstance()->fire(baseEvent1);
     EXPECT_EQ(handler1->getX(), 5);
@@ -261,11 +261,11 @@ TEST(EventBusTest, simpleFireAndForget)
     std::mutex mtx;
     std::condition_variable cv;
     bool processed = false;
-    auto handler = std::make_shared<asyncHandler>(cv, mtx, processed);
+    const auto handler = std::make_shared<asyncHandler>(cv, mtx, processed);
     auto baseHandler = std::static_pointer_cast<EventBus::EventHandlerBase>(handler);
-    auto handle1ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler);
-    auto event = std::make_shared<testEvent>(5);
-    auto baseEvent = std::static_pointer_cast<EventBus::Event>(event);
+    const auto handle1ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler);
+    const auto event = std::make_shared<testEvent>(5);
+    const auto baseEvent = std::static_pointer_cast<EventBus::Event>(event);
 
     std::unique_lock<std::mutex> lock(mtx);
     EventBus::EventBus::getInstance()->fireAndForget(baseEvent);
@@ -318,10 +318,10 @@ TEST(EventBusTest, differentAsyncHandlerForSameEventTest)
 
 TEST(EventBusTest, testSelfUnregisterViaEvent)
 {
-    auto handler = std::make_shared<testUnregisterHandler>();
+    const auto handler = std::make_shared<testUnregisterHandler>();
     auto baseHandler = std::static_pointer_cast<EventBus::EventHandlerBase>(handler);
     auto handle1ID = EventBus::EventBus::getInstance()->registerHandler(baseHandler);
-    auto event = std::make_shared<unregisterEvent>(5, handle1ID);
+    const auto event = std::make_shared<unregisterEvent>(5, handle1ID);
     auto baseEvent = std::static_pointer_cast<EventBus::Event>(event);
     EventBus::EventBus::getInstance()->fire(baseEvent);
 
