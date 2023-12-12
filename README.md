@@ -5,7 +5,7 @@ A simple EventBus for c++
 ## Debian 10 (x86_64) and Debian 11 (x86_64)
 ![TeamCity build status](https://teamcity.s4.matzzze.de/app/rest/builds/buildType:id:GitHubProjects_EventBus_LinuxBuild/statusIcon.svg)
 
-## Windows 10 x64
+## Windows 11 x64
 ![TeamCity build status](https://teamcity.s4.matzzze.de/app/rest/builds/buildType:id:GitHubProjects_EventBus_WindowsBuild/statusIcon.svg)
 
 # Description

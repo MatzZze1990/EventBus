@@ -74,6 +74,8 @@ protected:
 
 class testHandler2 : public EventBus::EventHandler<testEvent2>
 {
+
+
 public:
     testHandler2() : x(0) {}
     void onEvent(std::shared_ptr<testEvent2> &event) override
@@ -130,7 +132,6 @@ protected:
     std::mutex &mtx;
     bool &processed;
     int x;
-    int y;
 };
 
 class testUnregisterHandler : public EventBus::EventHandler<unregisterEvent>
