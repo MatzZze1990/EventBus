@@ -3,7 +3,7 @@
 //
 
 #include <gtest/gtest.h>
-#include "src/EventBus.h"
+#include "EventBus.h"
 
 class testEvent : public EventBus::Event
 {
