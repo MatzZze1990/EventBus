@@ -19,4 +19,4 @@ if (UNIX)
 endif()
 
 install(TARGETS EventBus)
-install(FILES include/Event.h include/EventBus.h include/EventHandler.h DESTINATION include)
+install(DIRECTORY include/EventBus DESTINATION include)
