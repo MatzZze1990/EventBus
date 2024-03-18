@@ -2,8 +2,8 @@
 // Created by MatzZze on 05.11.2022.
 //
 
-#include "EventBus.h"
-#include "Event.h"
+#include "EventBus/EventBus.h"
+#include "EventBus/Event.h"
 
 using EventBus::EBHandlerID;
 using EventBus::Event;
